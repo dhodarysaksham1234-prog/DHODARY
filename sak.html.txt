@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>StudyHub — Notes & Notices</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--glass: rgba(255,255,255,0.03)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:#e6eef6;background:linear-gradient(180deg,#071029 0%, #071829 60%);min-height:100vh}
+    header{display:flex;align-items:center;gap:16px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.03);backdrop-filter: blur(6px);position:sticky;top:0;background:linear-gradient(180deg, rgba(7,16,41,0.6), rgba(7,24,41,0.4));z-index:5}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700;color:#021627}
+    h1{font-size:1.05rem;margin:0}
+    .top-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+    .date-badge{background:var(--glass);padding:8px 12px;border-radius:10px;color:var(--muted);font-weight:600}
+
+    main{display:grid;grid-template-columns:360px 1fr;gap:20px;padding:22px;max-width:1150px;margin:20px auto}
+    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px} .left-col{order:2} .right-col{order:1}}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .left-col .card{margin-bottom:16px}
+
+    /* Notices */
+    .notice-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .notice{padding:10px;border-radius:8px;background:linear-gradient(180deg, rgba(6,182,212,0.03), rgba(124,58,237,0.02));border-left:4px solid var(--accent)}
+    .notice small{color:var(--muted)}
+
+    /* Upload area */
+    .upload-area{border:2px dashed rgba(255,255,255,0.04);padding:12px;border-radius:8px;text-align:center}
+    .upload-area input{display:none}
+    .btn{display:inline-block;padding:8px 12px;border-radius:8px;background:linear-gradient(90deg,var(--accent),#7c3aed);color:#021627;font-weight:700;border:none;cursor:pointer}
+    .muted{color:var(--muted)}
+
+    .file-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+    .file-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;background:var(--card)}
+    .file-item .title{font-weight:700}
+    .file-item small{color:var(--muted)}
+    .file-actions{margin-left:auto;display:flex;gap:8px}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px 8px;border-radius:8px;color:var(--muted);cursor:pointer}
+
+    /* Events */
+    .events{display:flex;flex-direction:column;gap:10px}
+    .event{display:flex;gap:10px;align-items:center}
+    .event .when{width:82px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center;font-weight:700}
+
+    /* Right column - content */
+    .search-row{display:flex;gap:12px;align-items:center}
+    .search{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:14px}
+    .note-card{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));min-height:120px;display:flex;flex-direction:column}
+    .note-card .meta{font-size:0.85rem;color:var(--muted);margin-top:auto;display:flex;justify-content:space-between}
+
+    footer{max-width:1150px;margin:14px auto;color:var(--muted);font-size:0.9rem;padding:0 22px}
+
+    /* small helpers */
+    label{display:block;margin-bottom:6px;font-weight:700}
+    input[type=text], input[type=date], textarea, select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+    form .row{display:flex;gap:8px}
+    form .row > *{flex:1}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">SH</div>
+      <div>
+        <h1>StudyHub</h1>
+        <div class="muted">Simple notes manager — upload & share PDFs</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="date-badge" id="currentDate">—</div>
+      <button class="btn" id="addNoticeBtn">+ Add Notice</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="left-col">
+      <div class="card">
+        <h3>Notices</h3>
+        <div id="notices" class="notice-list">
+          <!-- notices inserted here -->
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Upload PDF / Notes</h3>
+        <div class="upload-area">
+          <p class="muted">Drag & drop PDF files here or use the button</p>
+          <input type="file" id="fileInput" accept="application/pdf" multiple />
+          <div style="margin-top:10px">
+            <label for="fileInput" class="btn">Choose PDF(s)</label>
+            <button class="ghost" id="clearAllBtn">Clear All</button>
+          </div>
+        </div>
+        <div class="file-list card" id="fileList" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <h3>Upcoming Events</h3>
+        <div id="events" class="events"></div>
+        <hr style="border:none;height:12px;background:transparent">
+        <form id="eventForm">
+          <label>Event title</label>
+          <input type="text" id="eventTitle" placeholder="Midterm Exam" required />
+          <div class="row" style="margin-top:8px">
+            <div>
+              <label>Date</label>
+              <input type="date" id="eventDate" required />
+            </div>
+            <div>
+              <label>Time</label>
+              <input type="text" id="eventTime" placeholder="10:00 AM" />
+            </div>
+          </div>
+          <div style="margin-top:10px;text-align:right">
+            <button type="submit" class="btn">Add Event</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="card">
+        <div class="search-row">
+          <input class="search" id="search" placeholder="Search notes by title or subject..." />
+          <button class="ghost" id="sortBtn">Sort by date</button>
+        </div>
+
+        <div class="grid" id="notesGrid" style="margin-top:14px">
+          <!-- note cards -->
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h3>Quick actions</h3>
+        <p class="muted">Use this area to add notices quickly.</p>
+        <form id="noticeForm">
+          <label>Notice Title</label>
+          <input type="text" id="noticeTitle" placeholder="Class cancelled" required />
+          <label style="margin-top:8px">Details</label>
+          <textarea id="noticeBody" rows="3" placeholder="Reason, venue etc"></textarea>
+          <div style="text-align:right;margin-top:8px">
+            <button type="submit" class="btn">Post Notice</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    Built locally — files are stored in your browser (IndexedDB). For sharing with others, download and upload to your server or cloud storage.
+  </footer>
+
+  <script>
+    // Simple client-side file manager using IndexedDB. No backend required.
+    const DB_NAME = 'studyhub-db';
+    const DB_STORE = 'files';
+    let db;
+
+    function openDB(){
+      return new Promise((res, rej) => {
+        const r = indexedDB.open(DB_NAME, 1);
+        r.onupgradeneeded = e => {
+          const idb = e.target.result;
+          if(!idb.objectStoreNames.contains(DB_STORE)){
+            idb.createObjectStore(DB_STORE, {keyPath:'id'});
+          }
+          if(!idb.objectStoreNames.contains('notices')){
+            idb.createObjectStore('notices', {keyPath:'id'});
+          }
+          if(!idb.objectStoreNames.contains('events')){
+            idb.createObjectStore('events', {keyPath:'id'});
+          }
+        }
+        r.onsuccess = e => { db = e.target.result; res(db); }
+        r.onerror = e => rej(e);
+      })
+    }
+
+    function id(){return Math.random().toString(36).slice(2,9)}
+
+    async function addFile(file, subject='General'){
+      const reader = new FileReader();
+      return new Promise((res, rej) => {
+        reader.onload = async () => {
+          const tx = db.transaction(DB_STORE,'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          const obj = {id: id(), name: file.name, size: file.size, date: Date.now(), subject, data: reader.result, mime: file.type};
+          store.add(obj);
+          tx.oncomplete = () => { res(obj) };
+          tx.onerror = e => rej(e);
+        }
+        reader.readAsArrayBuffer(file);
+      })
+    }
+
+    function listFiles(){
+      return new Promise(res => {
+        const tx = db.transaction(DB_STORE,'readonly');
+        const store = tx.objectStore(DB_STORE);
+        const all = store.getAll();
+        all.onsuccess = () => res(all.result || []);
+      })
+    }
+
+    function deleteFile(idKey){
+      return new Promise(res => {
+        const tx = db.transaction(DB_STORE,'readwrite');
+        tx.objectStore(DB_STORE).delete(idKey);
+        tx.oncomplete = () => res();
+      })
+    }
+
+    // Notices store
+    function addNoticeObj(notice){
+      return new Promise(res =>{
+        const tx = db.transaction('notices','readwrite');
+        tx.objectStore('notices').add(notice);
+        tx.oncomplete = () => res();
+      })
+    }
+    function listNotices(){
+      return new Promise(res =>{
+        const tx = db.transaction('notices','readonly');
+        const req = tx.objectStore('notices').getAll();
+        req.onsuccess = () => res(req.result || []);
+      })
+    }
+    function deleteNotice(idKey){
+      return new Promise(res =>{
+        const tx = db.transaction('notices','readwrite');
+        tx.objectStore('notices').delete(idKey);
+        tx.oncomplete = () => res();
+      })
+    }
+
+    // Events store
+    function addEventObj(event){
+      return new Promise(res =>{
+        const tx = db.transaction('events','readwrite');
+        tx.objectStore('events').add(event);
+        tx.oncomplete = () => res();
+      })
+    }
+    function listEvents(){
+      return new Promise(res =>{
+        const tx = db.transaction('events','readonly');
+        const req = tx.objectStore('events').getAll();
+        req.onsuccess = () => res(req.result || []);
+      })
+    }
+    function deleteEvent(idKey){
+      return new Promise(res =>{
+        const tx = db.transaction('events','readwrite');
+        tx.objectStore('events').delete(idKey);
+        tx.oncomplete = () => res();
+      })
+    }
+
+    // UI helpers
+    function fmtDate(ts){const d=new Date(ts);return d.toLocaleString()}
+    function renderDate(){document.getElementById('currentDate').textContent = new Date().toLocaleString();}
+
+    async function renderFiles(filter=''){
+      const list = await listFiles();
+      const container = document.getElementById('fileList'); container.innerHTML='';
+      const grid = document.getElementById('notesGrid'); grid.innerHTML='';
+      const sorted = list.sort((a,b)=>b.date - a.date);
+      for(const f of sorted){
+        if(filter && !f.name.toLowerCase().includes(filter.toLowerCase()) && !f.subject?.toLowerCase().includes(filter.toLowerCase())) continue;
+        const item = document.createElement('div'); item.className='file-item';
+        item.innerHTML = `
+          <div>
+            <div class="title">${escapeHtml(f.name)}</div>
+            <small>${escapeHtml(f.subject || 'General')} • ${new Date(f.date).toLocaleString()}</small>
+          </div>
+          <div class="file-actions">
+            <button class="ghost" data-id="${f.id}" data-action="download">Download</button>
+            <button class="ghost" data-id="${f.id}" data-action="delete">Delete</button>
+          </div>
+        `;
+        container.appendChild(item);
+
+        // also render note card
+        const card = document.createElement('div'); card.className='note-card';
+        const short = f.name.length>40? f.name.slice(0,40)+'...' : f.name;
+        card.innerHTML = `<div style="font-weight:800">${escapeHtml(short)}</div><div class="meta"><span>${escapeHtml(f.subject||'General')}</span><span>${new Date(f.date).toLocaleDateString()}</span></div>`;
+        card.querySelector('.meta span:last-child').title = new Date(f.date).toLocaleString();
+        grid.appendChild(card);
+      }
+    }
+
+    function escapeHtml(s){ return (s+'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;', '"':'&quot;',"'":'&#39;'}[c])) }
+
+    async function renderNotices(){
+      const list = await listNotices();
+      const container = document.getElementById('notices'); container.innerHTML='';
+      const sorted = list.sort((a,b)=>b.date - a.date);
+      if(sorted.length === 0){ container.innerHTML = '<div class="muted">No notices yet. Add one from Quick actions.</div>'; return; }
+      for(const n of sorted){
+        const div = document.createElement('div'); div.className='notice';
+        div.innerHTML = `<div style="font-weight:700">${escapeHtml(n.title)}</div><small>${new Date(n.date).toLocaleString()}</small><div style="margin-top:6px" class="muted">${escapeHtml(n.body||'')}</div><div style="text-align:right;margin-top:8px"><button class="ghost" data-id="${n.id}" data-action="del-notice">Remove</button></div>`;
+        container.appendChild(div);
+      }
+    }
+
+    async function renderEvents(){
+      const list = await listEvents();
+      const container = document.getElementById('events'); container.innerHTML='';
+      const sorted = list.sort((a,b)=> new Date(a.date) - new Date(b.date));
+      if(sorted.length===0){ container.innerHTML = '<div class="muted">No upcoming events</div>'; return; }
+      for(const e of sorted){
+        const div = document.createElement('div'); div.className='event';
+        const d = new Date(e.date);
+        div.innerHTML = `<div class="when">${d.toLocaleDateString()}</div><div><div style="font-weight:800">${escapeHtml(e.title)}</div><div class="muted">${escapeHtml(e.time||'')}</div></div><div style="margin-left:auto"><button class="ghost" data-id="${e.id}" data-action="del-event">Remove</button></div>`;
+        container.appendChild(div);
+      }
+    }
+
+    // wire up
+    (async ()=>{
+      await openDB(); renderDate(); setInterval(renderDate, 60_000);
+      await renderFiles(); await renderNotices(); await renderEvents();
+
+      // file input
+      const fileInput = document.getElementById('fileInput');
+      fileInput.addEventListener('change', async (e)=>{
+        const files = Array.from(e.target.files || []);
+        for(const f of files){ await addFile(f); }
+        fileInput.value=''; await renderFiles(document.getElementById('search').value);
+      });
+
+      // drag & drop
+      const drop = document.querySelector('.upload-area');
+      drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.style.borderColor='rgba(6,182,212,0.8)'; });
+      drop.addEventListener('dragleave', e=>{ drop.style.borderColor='rgba(255,255,255,0.04)'; });
+      drop.addEventListener('drop', async (e)=>{
+        e.preventDefault(); drop.style.borderColor='rgba(255,255,255,0.04)';
+        const files = Array.from(e.dataTransfer.files || []).filter(f=>f.type === 'application/pdf');
+        for(const f of files) await addFile(f);
+        await renderFiles(document.getElementById('search').value);
+      });
+
+      // file actions
+      document.getElementById('fileList').addEventListener('click', async (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return;
+        const idk = btn.dataset.id; const act = btn.dataset.action;
+        if(act === 'delete'){ await deleteFile(idk); await renderFiles(document.getElementById('search').value); }
+        if(act === 'download'){
+          // fetch file and create blob link
+          const tx = db.transaction(DB_STORE,'readonly');
+          const req = tx.objectStore(DB_STORE).get(idk);
+          req.onsuccess = ()=>{
+            const f = req.result; if(!f) return;
+            const blob = new Blob([f.data], {type: f.mime || 'application/pdf'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(()=>URL.revokeObjectURL(url), 4000);
+          }
+        }
+      });
+
+      // clear all
+      document.getElementById('clearAllBtn').addEventListener('click', async ()=>{
+        if(!confirm('Clear all stored files? This will remove them from your browser.')) return;
+        const list = await listFiles();
+        for(const f of list) await deleteFile(f.id);
+        await renderFiles();
+      });
+
+      // notices
+      document.getElementById('noticeForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const title = document.getElementById('noticeTitle').value.trim();
+        const body = document.getElementById('noticeBody').value.trim();
+        if(!title) return alert('Title required');
+        await addNoticeObj({id:id(), title, body, date: Date.now()});
+        document.getElementById('noticeForm').reset();
+        await renderNotices();
+      });
+
+      // quick remove notice
+      document.getElementById('notices').addEventListener('click', async (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return; if(btn.dataset.action === 'del-notice'){ await deleteNotice(btn.dataset.id); await renderNotices(); }
+      });
+
+      // events
+      document.getElementById('eventForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const title = document.getElementById('eventTitle').value.trim();
+        const date = document.getElementById('eventDate').value; const time = document.getElementById('eventTime').value.trim();
+        if(!title || !date) return alert('Title and date required');
+        await addEventObj({id:id(), title, date, time});
+        e.target.reset(); await renderEvents();
+      });
+
+      document.getElementById('events').addEventListener('click', async (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return; if(btn.dataset.action === 'del-event'){ await deleteEvent(btn.dataset.id); await renderEvents(); }
+      });
+
+      // search
+      document.getElementById('search').addEventListener('input', async (e)=>{
+        await renderFiles(e.target.value);
+      });
+
+      // sort
+      document.getElementById('sortBtn').addEventListener('click', async ()=>{
+        // toggles currently by date desc / asc
+        const list = await listFiles(); list.reverse(); // not a sophisticated toggle; just re-render reversed
+        // create temporary sort by oldest first
+        list.sort((a,b)=>a.date - b.date);
+        // render directly
+        const container = document.getElementById('fileList'); container.innerHTML='';
+        const grid = document.getElementById('notesGrid'); grid.innerHTML='';
+        for(const f of list){
+          const item = document.createElement('div'); item.className='file-item';
+          item.innerHTML = `
+            <div>
+              <div class="title">${escapeHtml(f.name)}</div>
+              <small>${escapeHtml(f.subject || 'General')} • ${new Date(f.date).toLocaleString()}</small>
+            </div>
+            <div class="file-actions">
+              <button class="ghost" data-id="${f.id}" data-action="download">Download</button>
+              <button class="ghost" data-id="${f.id}" data-action="delete">Delete</button>
+            </div>
+          `;
+          container.appendChild(item);
+
+          const card = document.createElement('div'); card.className='note-card';
+          const short = f.name.length>40? f.name.slice(0,40)+'...' : f.name;
+          card.innerHTML = `<div style="font-weight:800">${escapeHtml(short)}</div><div class="meta"><span>${escapeHtml(f.subject||'General')}</span><span>${new Date(f.date).toLocaleDateString()}</span></div>`;
+          grid.appendChild(card);
+        }
+      });
+
+      // Add notice quick button (header)
+      document.getElementById('addNoticeBtn').addEventListener('click', ()=>{ document.getElementById('noticeTitle').focus(); });
+
+    })();
+
+  </script>
+</body>
+</html>
